@@ -34,8 +34,21 @@
     <!-- Main Quiz Container -->
     <main class="w-full max-w-2xl bg-white shadow-xl border border-slate-200 rounded-3xl p-6 sm:p-8 mb-6 relative overflow-hidden">
         
-        <!-- Progress Bar -->
-        <div id="quiz-header" class="mb-6">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="text-center py-6">
+            <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto text-3xl mb-4 shadow-sm border border-indigo-100">
+                <i class="fa-solid fa-stethoscope"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">أهلاً بك في اختبار الجهاز الهضمي والقلب</h2>
+            <p class="text-slate-600 text-sm max-w-md mx-auto mb-6">اختبر معلوماتك في تشريح البطن، وظائف القلب، وعادات الحفاظ على صحتك العامة. الأسئلة العادية بنقطة، وأسئلة الفراغات بـ 3 نقاط!</p>
+            <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-bold transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 mx-auto">
+                <span>ابدأ الاختبار الآن</span>
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+        </div>
+
+        <!-- Progress Bar (Hidden initially) -->
+        <div id="quiz-header" class="mb-6 hidden">
             <div class="flex justify-between items-center text-sm font-bold text-slate-600 mb-2">
                 <span id="question-number">السؤال 1 من 10</span>
                 <span id="points-badge" class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">1 نقطة</span>
@@ -46,7 +59,7 @@
         </div>
 
         <!-- Question Body -->
-        <div id="question-container"></div>
+        <div id="question-container" class="hidden"></div>
 
         <!-- Explanation Container -->
         <div id="explanation-container" class="hidden mt-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-sm">
@@ -57,7 +70,7 @@
         </div>
 
         <!-- Footer Actions -->
-        <div id="quiz-footer" class="mt-8 flex justify-end">
+        <div id="quiz-footer" class="mt-8 flex justify-end hidden">
             <button id="next-btn" onclick="nextQuestion()" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-bold transition flex items-center gap-2">
                 <span>السؤال التالي</span>
                 <i class="fa-solid fa-arrow-left"></i>
@@ -66,13 +79,17 @@
 
         <!-- Results View -->
         <div id="results-container" class="hidden text-center py-6">
-            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4">
-                <i class="fa-solid fa-trophy"></i>
+            <div id="result-icon-bg" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4 shadow-md">
+                <i id="result-icon" class="fa-solid"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-900 mb-2">اكتمل الاختبار بنجاح!</h2>
-            <p class="text-slate-600 mb-6">درجتك النهائية في الاختبار هي:</p>
-            <div class="text-4xl font-extrabold text-indigo-600 mb-6">
-                <span id="score-achieved">0</span> / <span id="score-total">14</span> نقطة
+            <p id="result-message" class="text-slate-600 mb-4 font-medium"></p>
+            
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 max-w-xs mx-auto mb-6">
+                <div class="text-sm text-slate-500 mb-1">الدرجة النهائية</div>
+                <div class="text-4xl font-extrabold" id="score-display">
+                    <span id="score-achieved">0</span> / <span id="score-total">16</span> نقطة
+                </div>
             </div>
 
             <div class="flex flex-col sm:flex-row justify-center gap-4">
@@ -180,4 +197,249 @@
                 explanation: "رحلة الطعام والهضم تبدأ أولاً في الفم[cite: 3]."
             },
             {
-                type: 'matching', points: 1,
+                type: 'matching', points: 3,
+                question: "10- صِل كل عضو من أعضاء الجهاز الهضمي بوظيفته الصحيحة:",
+                pairs: [
+                    { organ: "المعدة[cite: 10]", func: "تستقبل الطعام وتخلطه بالعصارات وتخزنه مؤقتاً[cite: 4]" },
+                    { organ: "الكبد[cite: 2]", func: "يعالج المواد الغذائية وينتج العصارة الصفراوية[cite: 2]" },
+                    { organ: "البنكرياس[cite: 2]", func: "ينتج إنزيمات الإنسولين لتنظيم السكر والهضم[cite: 2]" },
+                    { organ: "الأمعاء[cite: 2]", func: "تمتص العناصر الغذائية والماء وتطرد الفضلات[cite: 2]" }
+                ],
+                explanation: "لكل عضو في الجهاز الهضمي دور محدد: المعدة للخلط والتخزين[cite: 4]، الكبد للصفراء والمعالجة[cite: 2]، البنكرياس للإنسولين والإنزيمات[cite: 2]، والأمعاء للامتصاص[cite: 2]."
+            }
+        ];
+
+        let currentQIndex = 0;
+        let totalScore = 0;
+        const maxPossibleScore = 18; // 1+1+1+3+3+1+3+1+1+3 = 18
+        let selectedMatchOrgan = null;
+        let matchingState = {};
+
+        function startQuiz() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('quiz-header').classList.remove('hidden');
+            document.getElementById('question-container').classList.remove('hidden');
+            document.getElementById('quiz-footer').classList.remove('hidden');
+            document.getElementById('score-total').innerText = maxPossibleScore;
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = quizData[currentQIndex];
+            document.getElementById('question-number').innerText = `السؤال ${currentQIndex + 1} من ${quizData.length}`;
+            document.getElementById('points-badge').innerText = `${q.points} ${q.points === 3 ? 'نقاط' : 'نقطة'}`;
+            document.getElementById('progress-bar').style.width = `${((currentQIndex + 1) / quizData.length) * 100}%`;
+            
+            document.getElementById('next-btn').disabled = true;
+            document.getElementById('explanation-container').classList.add('hidden');
+
+            const container = document.getElementById('question-container');
+            container.innerHTML = `<h3 class="text-lg font-bold text-slate-900 mb-4">${q.question}</h3>`;
+
+            if (q.type === 'mcq' || q.type === 'tf') {
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'space-y-3';
+                q.options.forEach((opt, idx) => {
+                    optionsDiv.innerHTML += `
+                        <button onclick="selectOption(this, ${idx})" class="option-btn w-full text-right p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-slate-50 transition font-medium text-slate-700 flex justify-between items-center">
+                            <span>${opt}</span>
+                            <i class="fa-regular fa-circle text-slate-300 icon-placeholder"></i>
+                        </button>
+                    `;
+                });
+                container.appendChild(optionsDiv);
+            } 
+            else if (q.type === 'fill') {
+                container.innerHTML += `
+                    <div class="space-y-4">
+                        <input type="text" id="fill-input" placeholder="اكتب إجابتك هنا..." class="w-full p-4 rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium">
+                        <button id="fill-submit-btn" onclick="submitFillAnswer()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-900 transition">تأكيد الإجابة</button>
+                    </div>
+                `;
+            }
+            else if (q.type === 'matching') {
+                matchingState = { matchedCount: 0 };
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+
+                const shuffledFuncs = [...q.pairs].sort(() => Math.random() - 0.5);
+
+                let organsHTML = '<div class="space-y-2"><h4 class="font-bold text-sm text-slate-500 mb-2">الأعضاء</h4>';
+                q.pairs.forEach((p, idx) => {
+                    organsHTML += `
+                        <button id="organ-${idx}" onclick="selectOrgan(${idx})" class="organ-btn w-full text-right p-3 rounded-xl border border-slate-200 font-semibold text-slate-800 hover:border-indigo-400 transition flex justify-between items-center">
+                            <span>${p.organ}</span>
+                            <i class="fa-solid fa-link text-slate-300"></i>
+                        </button>
+                    `;
+                });
+                organsHTML += '</div>';
+
+                let funcsHTML = '<div class="space-y-2"><h4 class="font-bold text-sm text-slate-500 mb-2">الوظائف</h4>';
+                shuffledFuncs.forEach((f, idx) => {
+                    funcsHTML += `
+                        <button id="func-${idx}" onclick="selectFunc(${idx}, '${f.func}')" class="func-btn w-full text-right p-3 rounded-xl border border-slate-200 text-sm text-slate-700 hover:border-indigo-400 transition">
+                            ${f.func}
+                        </button>
+                    `;
+                });
+                funcsHTML += '</div>';
+
+                matchDiv.innerHTML = organsHTML + funcsHTML;
+                container.appendChild(matchDiv);
+            }
+        }
+
+        function selectOption(button, index) {
+            const q = quizData[currentQIndex];
+            const allButtons = document.querySelectorAll('.option-btn');
+            allButtons.forEach(btn => btn.classList.add('disabled-option'));
+
+            if (index === q.correct) {
+                button.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-900');
+                button.querySelector('.icon-placeholder').className = 'fa-solid fa-circle-check text-emerald-600 text-lg';
+                totalScore += q.points;
+            } else {
+                button.classList.add('bg-rose-50', 'border-rose-500', 'text-rose-900');
+                button.querySelector('.icon-placeholder').className = 'fa-solid fa-circle-xmark text-rose-600 text-lg';
+                allButtons[q.correct].classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-900');
+                allButtons[q.correct].querySelector('.icon-placeholder').className = 'fa-solid fa-circle-check text-emerald-600 text-lg';
+            }
+
+            showExplanation(q.explanation);
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function submitFillAnswer() {
+            const input = document.getElementById('fill-input');
+            const btn = document.getElementById('fill-submit-btn');
+            const val = input.value.trim().toLowerCase();
+            const q = quizData[currentQIndex];
+
+            if (!val) return;
+
+            input.disabled = true;
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const isCorrect = q.accepted.some(keyword => val.includes(keyword.toLowerCase()));
+
+            if (isCorrect) {
+                input.className = "w-full p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-bold";
+                totalScore += q.points;
+            } else {
+                input.className = "w-full p-4 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold";
+            }
+
+            showExplanation(q.explanation);
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function selectOrgan(idx) {
+            document.querySelectorAll('.organ-btn').forEach(b => b.classList.remove('selected-item'));
+            selectedMatchOrgan = idx;
+            document.getElementById(`organ-${idx}`).classList.add('selected-item');
+        }
+
+        function selectFunc(funcIdx, funcText) {
+            if (selectedMatchOrgan === null) return;
+
+            const q = quizData[currentQIndex];
+            const currentOrganObj = q.pairs[selectedMatchOrgan];
+            const organBtn = document.getElementById(`organ-${selectedMatchOrgan}`);
+            const funcBtn = document.getElementById(`func-${funcIdx}`);
+
+            if (currentOrganObj.func === funcText) {
+                organBtn.classList.add('matched-pair', 'bg-emerald-50', 'border-emerald-500');
+                funcBtn.classList.add('matched-pair', 'bg-emerald-50', 'border-emerald-500');
+                matchingState.matchedCount++;
+            } else {
+                organBtn.classList.add('matched-pair', 'bg-rose-50', 'border-rose-500');
+                funcBtn.classList.add('matched-pair', 'bg-rose-50', 'border-rose-500');
+            }
+
+            selectedMatchOrgan = null;
+
+            if (matchingState.matchedCount === q.pairs.length || document.querySelectorAll('.matched-pair').length === q.pairs.length * 2) {
+                if (matchingState.matchedCount === q.pairs.length) {
+                    totalScore += q.points;
+                }
+                showExplanation(q.explanation);
+                document.getElementById('next-btn').disabled = false;
+            }
+        }
+
+        function showExplanation(text) {
+            document.getElementById('explanation-text').innerHTML = text;
+            document.getElementById('explanation-container').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+            if (currentQIndex < quizData.length) {
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-header').classList.add('hidden');
+            document.getElementById('question-container').classList.add('hidden');
+            document.getElementById('explanation-container').classList.add('hidden');
+            document.getElementById('quiz-footer').classList.add('hidden');
+            
+            document.getElementById('score-achieved').innerText = totalScore;
+            
+            const percentage = (totalScore / maxPossibleScore) * 100;
+            const iconBg = document.getElementById('result-icon-bg');
+            const icon = document.getElementById('result-icon');
+            const message = document.getElementById('result-message');
+            const scoreDisplay = document.getElementById('score-display');
+
+            if (percentage >= 90) {
+                iconBg.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4 shadow-md bg-emerald-100 text-emerald-600";
+                icon.className = "fa-solid fa-trophy";
+                scoreDisplay.className = "text-4xl font-extrabold text-emerald-600";
+                message.innerText = "ممتاز! لقد حققت الدرجة الكاملة أو أداءً مذهلاً!";
+            } else if (percentage >= 50) {
+                iconBg.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4 shadow-md bg-amber-100 text-amber-600";
+                icon.className = "fa-solid fa-medal";
+                scoreDisplay.className = "text-4xl font-extrabold text-amber-600";
+                message.innerText = "جيد جداً! نتيجة طيبة، يمكنك المراجعة لتحقيق الدرجة الكاملة.";
+            } else {
+                iconBg.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4 shadow-md bg-rose-100 text-rose-600";
+                icon.className = "fa-solid fa-triangle-exclamation";
+                scoreDisplay.className = "text-4xl font-extrabold text-rose-600";
+                message.innerText = "تحتاج إلى مراجعة الملفات التثقيفية وإعادة المحاولة.";
+            }
+
+            document.getElementById('results-container').classList.remove('hidden');
+        }
+
+        function restartQuiz() {
+            currentQIndex = 0;
+            totalScore = 0;
+            document.getElementById('results-container').classList.add('hidden');
+            document.getElementById('welcome-screen').classList.remove('hidden');
+        }
+
+        function openQRModal() {
+            const modal = document.getElementById('qr-modal');
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, { text: window.location.href, width: 160, height: 160 });
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function copyURL() {
+            navigator.clipboard.writeText(window.location.href);
+            alert("تم نسخ رابط الموقع بنجاح!");
+        }
+    </script>
+</body>
+</html>
