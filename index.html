@@ -21,7 +21,7 @@
     <header class="w-full max-w-2xl bg-white shadow-sm border border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center">
         <div>
             <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-heart-pulse text-red-550 text-red-600"></i> اختبار صحة القلب والجهاز الهضمي
+                <i class="fa-solid fa-heart-pulse text-red-600"></i> اختبار صحة القلب والجهاز الهضمي
             </h1>
             <p class="text-xs text-slate-500 mt-1">اختبر معلوماتك الطبية بناءً على الملفات التثقيفية</p>
         </div>
@@ -46,9 +46,7 @@
         </div>
 
         <!-- Question Body -->
-        <div id="question-container">
-            <!-- Dynamic content inserted by JS -->
-        </div>
+        <div id="question-container"></div>
 
         <!-- Explanation Container -->
         <div id="explanation-container" class="hidden mt-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-sm">
@@ -66,7 +64,7 @@
             </button>
         </div>
 
-        <!-- Results View (Hidden initially) -->
+        <!-- Results View -->
         <div id="results-container" class="hidden text-center py-6">
             <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4">
                 <i class="fa-solid fa-trophy"></i>
@@ -86,3 +84,100 @@
                 </button>
             </div>
         </div>
+    </main>
+
+    <!-- QR Modal -->
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative transform scale-95 transition-transform duration-300" id="qr-modal-content">
+            <button onclick="closeQRModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">امسح الكود لفتح الاختبار</h3>
+            <p class="text-xs text-slate-500 mb-4">استخدم كاميرا الجوال للوصول للموقع مباشرة</p>
+            
+            <div class="bg-slate-50 p-4 rounded-2xl inline-block border border-slate-200 mb-4 shadow-inner">
+                <div id="qrcode" class="flex justify-center"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="copyURL()" class="flex-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-indigo-200">
+                    <i class="fa-solid fa-copy"></i> نسخ الرابط
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                type: 'mcq', points: 1,
+                question: "1- ما هي وظيفة القلب؟[cite: 9]",
+                options: [
+                    "امتصاص العناصر الغذائية والماء[cite: 9]",
+                    "ضخ الدم المحمل بالأكسجين إلى أنحاء الجسم لتصل الطاقة إلى الخلايا[cite: 9]",
+                    "معالجة المواد الغذائية وإنتاج العصارة الصفراوية[cite: 9]",
+                    "إنتاج الإنزيمات الهاضمة وتنظيم سكر الدم[cite: 9]"
+                ],
+                correct: 1,
+                explanation: "القلب يضخ الدم المحمل بالأكسجين إلى جميع أنحاء الجسم لتصل الطاقة إلى الخلايا[cite: 9]."
+            },
+            {
+                type: 'tf', points: 1,
+                question: "2- يرفع التدخين خطر الإصابة بأمراض القلب.[cite: 17]",
+                options: ["صح", "خطأ"],
+                correct: 0,
+                explanation: "التدخين يُعد عاملاً رئيسياً يرفع خطر الإصابة بأمراض القلب ويزيد العبء على القلب والأوعية[cite: 17]."
+            },
+            {
+                type: 'mcq', points: 1,
+                question: "3- من الأعراض التي تستحق الانتباه ولكنها غالباً لا تسبب أعراضاً واضحة ويمكن اكتشافها بالقياس المنتظم:[cite: 16]",
+                options: [
+                    "ألم أو انزعاج شديد في الصدر[cite: 16]",
+                    "ارتفاع ضغط الدم[cite: 16]",
+                    "ضيق التنفس الحاد مع غثيان[cite: 16]",
+                    "خفقان أو رفرفة سريعة في الصدر[cite: 16]"
+                ],
+                correct: 1,
+                explanation: "ارتفاع ضغط الدم غالباً لا يسبب أعراضاً واضحة، ويساعد القياس المنتظم على اكتشافه[cite: 16]."
+            },
+            {
+                type: 'fill', points: 3,
+                question: "4- أذكر واحداً من أشهر أمراض القلب أو عوامل الخطر:[cite: 15]",
+                accepted: ["ضغط", "الشرايين", "اضطراب", "فشل", "تدخين", "كوليسترول", "سكري", "حركة"],
+                explanation: "من أشهر أمراض القلب: ارتفاع ضغط الدم، مرض الشرايين التاجية، اضطراب النظم، فشل القلب، ومن عوامل الخطر: التدخين، السكري، الكوليسترول[cite: 15]."
+            },
+            {
+                type: 'fill', points: 3,
+                question: "5- أذكر واحدة من العادات التي تساعد على الحفاظ على صحة القلب:[cite: 17]",
+                accepted: ["نشاط", "رياضة", "غذاء", "طعام", "أكل", "مؤشرات", "ضغط", "سكري", "نوم", "توتر", "تدخين", "دخان", "حركة", "مشي"],
+                explanation: "العادات الصحية تشمل: النشاط البدني المنتظم، الغذاء المتوازن، متابعة الضغط والسكر، النوم الكافي، والإقلاع عن التدخين[cite: 17]."
+            },
+            {
+                type: 'mcq', points: 1,
+                question: "6- قد يصل التقدير إلى 108 آلاف نبضة عند معدل يقارب ------------ في الدقيقة:[cite: 13]",
+                options: ["60 نبضة[cite: 13]", "75 نبضة[cite: 13]", "90 نبضة[cite: 13]", "100 نبضة[cite: 13]"],
+                correct: 1,
+                explanation: "قد يصل تقدير نبضات القلب اليومية إلى 108 آلاف نبضة عند معدل يقارب 75 نبضة في الدقيقة[cite: 13]."
+            },
+            {
+                type: 'fill', points: 3,
+                question: "7- أذكر واحدة من العادات التي تحافظ على صحة البطن والجهاز الهضمي:[cite: 7]",
+                accepted: ["ألياف", "ماء", "سوائل", "دسم", "نشاط", "رياضة", "نظافة", "غذاء", "طعام"],
+                explanation: "من العادات الصحية للبطن: تناول الألياف، شرب الماء بكثرة، التقليل من الدهون، ممارسة الرياضة، والنظافة الغذائية[cite: 7]."
+            },
+            {
+                type: 'mcq', points: 1,
+                question: "8- من كم عضو رئيسي يتكون الجهاز الهضمي والبطن المذكور في المنظومة؟[cite: 9]",
+                options: ["عضوان", "4 أعضاء رئيسية (المعدة، الأمعاء، الكبد، البنكرياس)[cite: 9]", "6 أعضاء", "3 أعضاء"],
+                correct: 1,
+                explanation: "تضم المنظومة 4 أعضاء رئيسية: المعدة، الأمعاء، الكبد، والبنكرياس[cite: 9]."
+            },
+            {
+                type: 'mcq', points: 1,
+                question: "9- يبدأ الهضم في ------------ :[cite: 3]",
+                options: ["المعدة[cite: 3]", "الأمعاء الدقيقة[cite: 3]", "الفم[cite: 3]", "المريء[cite: 3]"],
+                correct: 2,
+                explanation: "رحلة الطعام والهضم تبدأ أولاً في الفم[cite: 3]."
+            },
+            {
+                type: 'matching', points: 1,
