@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4f46e5">
+  <title>اختبار صحة القلب والجهاز الهضمي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }
+    .option-btn:disabled, .match-btn:disabled { cursor: not-allowed; }
+    .selected-item { border-color: #4f46e5 !important; background: #eef2ff !important; }
+    .matched-correct { border-color: #10b981 !important; background: #ecfdf5 !important; color: #065f46 !important; opacity: .8; }
+    .shake { animation: shake .22s ease-in-out; }
+    @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 flex flex-col items-center p-4">
+  <header class="w-full max-w-2xl bg-white shadow-sm border border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center gap-3">
+    <div>
+      <h1 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-heart-pulse text-red-600" aria-hidden="true"></i>
+        اختبار صحة القلب والجهاز الهضمي
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">اختبر معلوماتك الطبية بطريقة تفاعلية</p>
+    </div>
+    <button id="qr-open" type="button" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-sm font-semibold border border-indigo-200 transition">
+      <i class="fa-solid fa-qrcode ml-1" aria-hidden="true"></i> رمز QR
+    </button>
+  </header>
+
+  <main class="w-full max-w-2xl bg-white shadow-xl border border-slate-200 rounded-3xl p-5 sm:p-8 mb-6">
+    <section id="welcome-screen" class="text-center py-6">
+      <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto text-3xl mb-4 border border-indigo-100">
+        <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-900 mb-2">أهلاً بك في الاختبار</h2>
+      <p class="text-slate-600 text-sm max-w-md mx-auto mb-6 leading-7">
+        اختبر معلوماتك في تشريح البطن ووظائف القلب والعادات الصحية.
+        الأسئلة العادية بنقطة، وأسئلة الإجابة القصيرة والمطابقة بثلاث نقاط.
+      </p>
+      <button id="start-btn" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-bold transition shadow-lg shadow-indigo-200">
+        ابدأ الاختبار <i class="fa-solid fa-arrow-left mr-2" aria-hidden="true"></i>
+      </button>
+    </section>
+
+    <section id="quiz-screen" class="hidden" aria-live="polite">
+      <div class="mb-6">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-600 mb-2 gap-2">
+          <span id="question-number">السؤال 1 من 10</span>
+          <span id="points-badge" class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">1 نقطة</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden" role="progressbar" aria-label="تقدم الاختبار" aria-valuemin="0" aria-valuemax="10" aria-valuenow="1" id="progress-track">
+          <div id="progress-bar" class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width:10%"></div>
+        </div>
+      </div>
+      <div id="question-container"></div>
+      <div id="explanation-container" class="hidden mt-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-sm leading-7">
+        <div class="font-bold mb-1"><i class="fa-solid fa-circle-info ml-1" aria-hidden="true"></i> الشرح والتوضيح</div>
+        <p id="explanation-text"></p>
+      </div>
+      <div class="mt-8 flex justify-between items-center gap-3">
+        <span id="live-score" class="text-xs text-slate-500" aria-live="polite">النتيجة: 0</span>
+        <button id="next-btn" type="button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-bold transition">
+          السؤال التالي <i class="fa-solid fa-arrow-left mr-1" aria-hidden="true"></i>
+        </button>
+      </div>
+    </section>
+
+    <section id="results-container" class="hidden text-center py-6" aria-live="polite">
+      <div id="result-icon-bg" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">
+        <i id="result-icon" class="fa-solid" aria-hidden="true"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-900 mb-2">اكتمل الاختبار!</h2>
+      <p id="result-message" class="text-slate-600 mb-4 font-medium"></p>
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 max-w-xs mx-auto mb-6">
+        <div class="text-sm text-slate-500 mb-1">الدرجة النهائية</div>
+        <div class="text-4xl font-extrabold text-indigo-700"><span id="score-achieved">0</span> / <span id="score-total">18</span></div>
+        <div id="percentage-display" class="text-sm text-slate-500 mt-1"></div>
+      </div>
+      <button id="restart-btn" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition">
+        <i class="fa-solid fa-rotate-right ml-1" aria-hidden="true"></i> إعادة الاختبار
+      </button>
+    </section>
+  </main>
+
+  <footer class="text-xs text-slate-400 text-center pb-3">يمكنك إعادة الاختبار في أي وقت لمراجعة معلوماتك.</footer>
+
+  <div id="qr-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative">
+      <button id="qr-close" type="button" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 text-xl" aria-label="إغلاق">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+      <h3 id="qr-title" class="text-lg font-bold text-slate-900 mb-1">امسح الرمز لفتح الاختبار</h3>
+      <p class="text-xs text-slate-500 mb-4">يعمل الرمز عند نشر الصفحة على رابط يمكن للجوال الوصول إليه.</p>
+      <div class="bg-slate-50 p-4 rounded-2xl inline-block border border-slate-200 mb-4">
+        <div id="qrcode" class="flex justify-center"></div>
+      </div>
+      <button id="copy-url-btn" type="button" class="w-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 py-2.5 rounded-xl text-sm font-bold border border-indigo-200">
+        <i class="fa-solid fa-copy ml-1" aria-hidden="true"></i> نسخ الرابط
+      </button>
+      <p id="qr-message" class="text-xs text-slate-500 mt-3" aria-live="polite"></p>
+    </div>
+  </div>
+
+<script>
+'use strict';
+
+const quizData = [
+  { type:'mcq', points:1, question:'ما هي وظيفة القلب؟', options:[
+    'امتصاص العناصر الغذائية والماء',
+    'ضخ الدم المحمل بالأكسجين إلى أنحاء الجسم',
+    'معالجة المواد الغذائية وإنتاج العصارة الصفراوية',
+    'إنتاج الإنزيمات الهاضمة وتنظيم سكر الدم'
+  ], correct:1, explanation:'القلب يضخ الدم إلى أنحاء الجسم، مما يساعد على إيصال الأكسجين والمواد اللازمة إلى الخلايا.' },
+  { type:'tf', points:1, question:'يرفع التدخين خطر الإصابة بأمراض القلب.', options:['صح','خطأ'], correct:0,
+    explanation:'التدخين من عوامل الخطر التي تزيد احتمال الإصابة بأمراض القلب والأوعية الدموية.' },
+  { type:'mcq', points:1, question:'أي مما يلي قد لا يسبب أعراضاً واضحة، ويمكن اكتشافه بالقياس المنتظم؟', options:[
+    'ألم شديد في الصدر','ارتفاع ضغط الدم','ضيق التنفس الحاد','خفقان سريع في الصدر'
+  ], correct:1, explanation:'ارتفاع ضغط الدم قد لا يسبب أعراضاً واضحة، لذلك يساعد قياسه بانتظام على اكتشافه.' },
+  { type:'fill', points:3, question:'اذكر واحداً من أشهر أمراض القلب أو عوامل الخطر.', accepted:[
+    'ضغط الدم','ارتفاع الضغط','ارتفاع ضغط الدم','ضغط مرتفع','ضغط عالي',
+    'مرض الشرايين','الشرايين التاجية','مرض الشريان التاجي','اضطراب النظم',
+    'عدم انتظام ضربات القلب','فشل القلب','التدخين','التدخين السلبي',
+    'كوليسترول','ارتفاع الكوليسترول','السكري','داء السكري','قلة الحركة','الخمول'
+  ], explanation:'من الأمثلة: ارتفاع ضغط الدم، مرض الشرايين التاجية، اضطراب النظم، فشل القلب، التدخين، السكري، وارتفاع الكوليسترول.' },
+  { type:'fill', points:3, question:'اذكر واحدة من العادات التي تساعد على الحفاظ على صحة القلب.', accepted:[
+    'ممارسة الرياضة','ممارسة التمارين','النشاط البدني','المشي','المشي يوميا',
+    'الحركة بانتظام','الغذاء المتوازن','تناول غذاء صحي','الاكل الصحي','الطعام الصحي',
+    'متابعة ضغط الدم','قياس الضغط','متابعة السكر','فحص السكر','النوم الكافي',
+    'النوم بشكل كاف','تقليل التوتر','ادارة التوتر','الابتعاد عن التدخين',
+    'الاقلاع عن التدخين','ترك التدخين'
+  ], explanation:'تشمل العادات الصحية النشاط البدني المنتظم، والغذاء المتوازن، ومتابعة ضغط الدم والسكر، والنوم الكافي، والابتعاد عن التدخين.' },
+  { type:'mcq', points:1, question:'قد يصل تقدير نبضات القلب إلى 108 آلاف نبضة يومياً عند معدل يقارب كم نبضة في الدقيقة؟', options:[
+    '60 نبضة','75 نبضة','90 نبضة','100 نبضة'
+  ], correct:1, explanation:'عند معدل يقارب 75 نبضة في الدقيقة، يكون التقدير اليومي نحو 108 آلاف نبضة.' },
+  { type:'fill', points:3, question:'اذكر واحدة من العادات التي تحافظ على صحة البطن والجهاز الهضمي.', accepted:[
+    'الالياف','تناول الالياف','اكل الالياف','الخضروات','الفواكه',
+    'شرب الماء','اشرب الماء','شرب السوائل','تناول السوائل',
+    'تقليل الدهون','التقليل من الدهون','تجنب الاطعمة الدسمة',
+    'ممارسة الرياضة','النشاط البدني','المشي','الحركة',
+    'النظافة الغذائية','غسل اليدين','غسل الطعام','غذاء صحي','طعام صحي'
+  ], explanation:'من العادات المفيدة تناول الألياف، وشرب الماء، والتقليل من الدهون، وممارسة النشاط البدني، والاهتمام بالنظافة الغذائية.' },
+  { type:'mcq', points:1, question:'كم عضواً رئيسياً ذُكر في منظومة الجهاز الهضمي والبطن؟', options:[
+    'عضوان','4 أعضاء رئيسية: المعدة والأمعاء والكبد والبنكرياس','6 أعضاء','3 أعضاء'
+  ], correct:1, explanation:'الأعضاء الرئيسية المذكورة هي المعدة والأمعاء والكبد والبنكرياس.' },
+  { type:'mcq', points:1, question:'أين تبدأ عملية الهضم؟', options:[
+    'المعدة','الأمعاء الدقيقة','الفم','المريء'
+  ], correct:2, explanation:'تبدأ عملية الهضم في الفم.' },
+  { type:'matching', points:4, question:'صِل كل عضو من أعضاء الجهاز الهضمي بوظيفته الصحيحة.', pairs:[
+    { organ:'المعدة', func:'تستقبل الطعام وتخلطه بالعصارات وتخزنه مؤقتاً' },
+    { organ:'الكبد', func:'يعالج المواد الغذائية وينتج العصارة الصفراوية' },
+    { organ:'البنكرياس', func:'ينتج الإنسولين وإنزيمات تساعد على الهضم' },
+    { organ:'الأمعاء', func:'تمتص العناصر الغذائية والماء وتطرد الفضلات' }
+  ], explanation:'المعدة تخلط الطعام وتخزنه مؤقتاً، والكبد ينتج العصارة الصفراوية، والبنكرياس ينتج الإنسولين وإنزيمات الهضم، والأمعاء تمتص العناصر الغذائية والماء.' }
+];
+
+const maxPossibleScore = quizData.reduce((sum, q) => sum + q.points, 0);
+let currentQIndex = 0;
+let totalScore = 0;
+let answered = false;
+let selectedMatchOrgan = null;
+let matchedOrgans = new Set();
+let matchedFunctions = new Set();
+let shuffledFunctions = [];
+
+const $ = id => document.getElementById(id);
+const welcomeScreen = $('welcome-screen');
+const quizScreen = $('quiz-screen');
+const resultsContainer = $('results-container');
+const questionContainer = $('question-container');
+const nextBtn = $('next-btn');
+
+function showScreen(screen) {
+  [welcomeScreen, quizScreen, resultsContainer].forEach(el => el.classList.add('hidden'));
+  screen.classList.remove('hidden');
+}
+
+function startQuiz() {
+  currentQIndex = 0;
+  totalScore = 0;
+  $('score-total').textContent = maxPossibleScore;
+  showScreen(quizScreen);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = quizData[currentQIndex];
+  answered = false;
+  selectedMatchOrgan = null;
+  matchedOrgans = new Set();
+  matchedFunctions = new Set();
+
+  $('question-number').textContent = `السؤال ${currentQIndex + 1} من ${quizData.length}`;
+  $('points-badge').textContent = `${q.points} ${q.points === 1 ? 'نقطة' : 'نقاط'}`;
+  const progress = ((currentQIndex + 1) / quizData.length) * 100;
+  $('progress-bar').style.width = `${progress}%`;
+  $('progress-track').setAttribute('aria-valuenow', currentQIndex + 1);
+  $('explanation-container').classList.add('hidden');
+  $('live-score').textContent = `النتيجة: ${totalScore} / ${maxPossibleScore}`;
+  nextBtn.disabled = true;
+  nextBtn.innerHTML = currentQIndex === quizData.length - 1
+    ? 'عرض النتيجة <i class="fa-solid fa-flag-checkered mr-1" aria-hidden="true"></i>'
+    : 'السؤال التالي <i class="fa-solid fa-arrow-left mr-1" aria-hidden="true"></i>';
+
+  questionContainer.replaceChildren();
+  const heading = document.createElement('h3');
+  heading.className = 'text-lg font-bold text-slate-900 mb-5 leading-8';
+  heading.textContent = `${currentQIndex + 1}- ${q.question}`;
+  questionContainer.appendChild(heading);
+
+  if (q.type === 'mcq' || q.type === 'tf') renderOptions(q);
+  else if (q.type === 'fill') renderFill(q);
+  else if (q.type === 'matching') renderMatching(q);
+}
+
+function renderOptions(q) {
+  const list = document.createElement('div');
+  list.className = 'space-y-3';
+  q.options.forEach((option, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'option-btn w-full text-right p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-slate-50 transition font-medium text-slate-700 flex justify-between items-center gap-3';
+    const label = document.createElement('span');
+    label.textContent = option;
+    const icon = document.createElement('i');
+    icon.className = 'fa-regular fa-circle text-slate-300';
+    icon.setAttribute('aria-hidden', 'true');
+    button.append(label, icon);
+    button.addEventListener('click', () => selectOption(button, index));
+    list.appendChild(button);
+  });
+  questionContainer.appendChild(list);
+}
+
+function selectOption(button, index) {
+  if (answered) return;
+  answered = true;
+  const q = quizData[currentQIndex];
+  const buttons = [...questionContainer.querySelectorAll('.option-btn')];
+  buttons.forEach(b => b.disabled = true);
+
+  if (index === q.correct) {
+    totalScore += q.points;
+    markOption(buttons[index], true);
+  } else {
+    markOption(buttons[index], false);
+    markOption(buttons[q.correct], true);
+  }
+  finishAnswer(q.explanation);
+}
+
+function markOption(button, correct) {
+  button.classList.add(...(correct
+    ? ['bg-emerald-50','border-emerald-500','text-emerald-900']
+    : ['bg-rose-50','border-rose-500','text-rose-900']));
+  const icon = button.querySelector('i');
+  icon.className = correct
+    ? 'fa-solid fa-circle-check text-emerald-600 text-lg'
+    : 'fa-solid fa-circle-xmark text-rose-600 text-lg';
+}
+
+function normalizeArabic(value) {
+  return value.toLowerCase()
+    .replace(/[\u064B-\u065F\u0670ـ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/[ًٌٍَُِّْ]/g, '')
+    .replace(/[.,،؛:!?؟()\[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Match complete meaningful answer phrases, not vague fragments.
+// This accepts natural sentences such as "أنا أمارس الرياضة يومياً".
+function isAcceptedAnswer(answer, acceptedPhrases) {
+  const normalizedAnswer = ` ${normalizeArabic(answer)} `;
+  return acceptedPhrases.some(phrase => {
+    const normalizedPhrase = normalizeArabic(phrase);
+    return normalizedPhrase.length > 0 &&
+      normalizedAnswer.includes(` ${normalizedPhrase} `);
+  });
+}
+
+function renderFill(q) {
+  // Use a regular container instead of a form to avoid browser-specific form
+  // submission behavior interrupting the quiz flow.
+  const wrap = document.createElement('div');
+  wrap.className = 'space-y-3';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'fill-input';
+  input.autocomplete = 'off';
+  input.placeholder = 'اكتب إجابتك هنا...';
+  input.setAttribute('aria-label', 'إجابتك');
+  input.className = 'w-full p-4 rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium';
+  const submit = document.createElement('button');
+  submit.type = 'button';
+  submit.className = 'w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-900 transition';
+  submit.textContent = 'تأكيد الإجابة';
+
+  submit.addEventListener('click', () => submitFillAnswer(q, input, submit));
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitFillAnswer(q, input, submit);
+    }
+  });
+
+  wrap.append(input, submit);
+  questionContainer.appendChild(wrap);
+  input.focus();
+}
+
+function submitFillAnswer(q, input, submit) {
+  if (answered) return;
+
+  const value = normalizeArabic(input.value);
+  if (!value) {
+    input.classList.add('border-rose-400', 'shake');
+    input.focus();
+    return;
+  }
+
+  // Evaluate first, then lock the answer. Both correct and incorrect answers
+  // must reveal the explanation and unlock the Next Question button.
+  const correct = isAcceptedAnswer(value, q.accepted || []);
+  if (correct) totalScore += q.points;
+
+  input.disabled = true;
+  submit.disabled = true;
+  submit.classList.add('opacity-50', 'cursor-not-allowed');
+  input.classList.remove('border-slate-300');
+  input.classList.add('border-2', correct ? 'border-emerald-500' : 'border-rose-500',
+    correct ? 'bg-emerald-50' : 'bg-rose-50');
+
+  const feedback = document.createElement('p');
+  feedback.className = `mt-3 font-bold ${correct ? 'text-emerald-700' : 'text-rose-700'}`;
+  feedback.textContent = correct
+    ? 'إجابة صحيحة — أحسنت!'
+    : 'إجابة غير صحيحة — لم تُحتسب لها نقاط.';
+  input.parentElement.appendChild(feedback);
+
+  finishAnswer(q.explanation);
+}
+
+function renderMatching(q) {
+  // One tap selects an answer for each organ. Each correct match earns 1 point.
+  const instruction = document.createElement('p');
+  instruction.className = 'text-sm text-slate-500 mb-3';
+  instruction.textContent = 'لكل عضو، اضغط مرة واحدة على الوظيفة الصحيحة. كل إجابة صحيحة بدرجة واحدة.';
+  questionContainer.appendChild(instruction);
+
+  const rows = document.createElement('div');
+  rows.className = 'space-y-4';
+
+  const completedRows = new Set();
+
+  q.pairs.forEach((pair, organIndex) => {
+    const row = document.createElement('section');
+    row.className = 'rounded-xl border border-slate-200 p-3 space-y-2';
+
+    const heading = document.createElement('h4');
+    heading.className = 'font-bold text-slate-800';
+    heading.textContent = `${organIndex + 1}. ${pair.organ}`;
+
+    const choices = document.createElement('div');
+    choices.className = 'grid grid-cols-1 gap-2';
+
+    const shuffled = q.pairs.map((item, index) => ({
+      text: item.func,
+      originalIndex: index
+    }));
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const feedback = document.createElement('p');
+    feedback.className = 'text-sm font-bold hidden';
+
+    shuffled.forEach(choice => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'match-btn w-full text-right p-3 rounded-lg border border-slate-200 text-sm hover:border-indigo-400 transition';
+      button.textContent = choice.text;
+
+      button.addEventListener('click', () => {
+        if (answered || completedRows.has(organIndex)) return;
+
+        completedRows.add(organIndex);
+        choices.querySelectorAll('button').forEach(option => {
+          option.disabled = true;
+          option.classList.add('opacity-60', 'cursor-not-allowed');
+        });
+
+        if (choice.originalIndex === organIndex) {
+          totalScore += 1;
+          button.classList.remove('opacity-60');
+          button.classList.add('matched-correct');
+          feedback.textContent = 'إجابة صحيحة (+1)';
+          feedback.className = 'text-sm font-bold text-emerald-700';
+        } else {
+          button.classList.remove('opacity-60');
+          button.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-800');
+          feedback.textContent = 'إجابة غير صحيحة (0)';
+          feedback.className = 'text-sm font-bold text-rose-700';
+        }
+
+        $('live-score').textContent = `النتيجة: ${totalScore} / ${maxPossibleScore}`;
+
+        if (completedRows.size === q.pairs.length) {
+          finishAnswer(q.explanation);
+        }
+      });
+
+      choices.appendChild(button);
+    });
+
+    row.append(heading, choices, feedback);
+    rows.appendChild(row);
+  });
+
+  questionContainer.appendChild(rows);
+}
+
+function finishAnswer(explanation) {
+  // Centralize the completion state so every question type unlocks navigation.
+  answered = true;
+  $('explanation-text').textContent = explanation;
+  $('explanation-container').classList.remove('hidden');
+  $('live-score').textContent = `النتيجة: ${totalScore} / ${maxPossibleScore}`;
+  nextBtn.disabled = false;
+}
+
+function nextQuestion() {
+  if (nextBtn.disabled) return;
+  currentQIndex++;
+  if (currentQIndex < quizData.length) renderQuestion();
+  else showResults();
+}
+
+function showResults() {
+  showScreen(resultsContainer);
+  $('score-achieved').textContent = totalScore;
+  $('score-total').textContent = maxPossibleScore;
+  const percentage = Math.round((totalScore / maxPossibleScore) * 100);
+  $('percentage-display').textContent = `${percentage}%`;
+  const bg = $('result-icon-bg');
+  const icon = $('result-icon');
+  const message = $('result-message');
+
+  if (percentage >= 90) {
+    bg.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl mb-4 bg-emerald-100 text-emerald-600';
+    icon.className = 'fa-solid fa-trophy';
+    message.textContent = 'ممتاز! أداء رائع، واصل التعلم والمراجعة.';
+  } else if (percentage >= 50) {
+    bg.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl mb-4 bg-amber-100 text-amber-600';
+    icon.className = 'fa-solid fa-medal';
+    message.textContent = 'أحسنت! راجع الإجابات وحاول تحسين نتيجتك.';
+  } else {
+    bg.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl mb-4 bg-rose-100 text-rose-600';
+    icon.className = 'fa-solid fa-book-open';
+    message.textContent = 'لا بأس، راجع المعلومات ثم حاول مرة أخرى.';
+  }
+}
+
+function openQRModal() {
+  const modal = $('qr-modal');
+  const qrContainer = $('qrcode');
+  qrContainer.replaceChildren();
+  $('qr-message').textContent = '';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  if (location.protocol === 'file:') {
+    $('qr-message').textContent = 'هذه الصفحة مفتوحة كملف محلي. انشرها على استضافة ويب أولاً حتى يستطيع الآخرون فتحها عبر QR.';
+    return;
+  }
+  if (typeof QRCode === 'undefined') {
+    $('qr-message').textContent = 'تعذر تحميل مكتبة QR. تحقق من اتصال الإنترنت.';
+    return;
+  }
+  new QRCode(qrContainer, { text: location.href, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
+}
+
+function closeQRModal() {
+  $('qr-modal').classList.add('hidden');
+  $('qr-modal').classList.remove('flex');
+  $('qr-open').focus();
+}
+
+async function copyURL() {
+  const message = $('qr-message');
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(location.href);
+    } else {
+      const temp = document.createElement('textarea');
+      temp.value = location.href;
+      temp.style.position = 'fixed';
+      temp.style.opacity = '0';
+      document.body.appendChild(temp);
+      temp.select();
+      const copied = document.execCommand('copy');
+      temp.remove();
+      if (!copied) throw new Error('Copy failed');
+    }
+    message.textContent = 'تم نسخ الرابط.';
+  } catch {
+    message.textContent = 'تعذر النسخ تلقائياً. انسخ الرابط من شريط العنوان.';
+  }
+}
+
+$('start-btn').addEventListener('click', startQuiz);
+nextBtn.addEventListener('click', nextQuestion);
+$('restart-btn').addEventListener('click', startQuiz);
+$('qr-open').addEventListener('click', openQRModal);
+$('qr-close').addEventListener('click', closeQRModal);
+$('copy-url-btn').addEventListener('click', copyURL);
+$('qr-modal').addEventListener('click', event => {
+  if (event.target === $('qr-modal')) closeQRModal();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !$('qr-modal').classList.contains('hidden')) closeQRModal();
+});
+</script>
+</body>
+</html>
